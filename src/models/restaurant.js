@@ -19,6 +19,29 @@ const restaurantSchema = new mongoose.Schema(
       type: String,
       required: true,
     },
+    location: {
+      lat: Number,
+      lng: Number,
+    },
+    cuisine: {
+      type: String,
+    },
+    priceRange: {
+      type: Number,
+      min: 1,
+      max: 4,
+    },
+    estimatedDeliveryTime: {
+      type: Number,
+    },
+    isVegetarian: {
+      type: Boolean,
+      default: false,
+    },
+    popularity: {
+      type: Number,
+      default: 0,
+    },
     rating: {
       type: Number,
       default: 0,
@@ -33,4 +56,5 @@ const restaurantSchema = new mongoose.Schema(
   },
   { timestamps: true },
 );
+restaurantSchema.index({ name: "text", cuisine: "text" });
 module.exports = mongoose.model("Restaurant", restaurantSchema);

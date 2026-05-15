@@ -48,6 +48,11 @@ const orderSchema = new mongoose.Schema(
       type: String,
       required: true,
     },
+    deliveryPartner: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "DeliveryPartner",
+      default: null,
+    },
   },
   { timestamps: true },
 );

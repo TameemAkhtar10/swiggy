@@ -1,4 +1,95 @@
 const restaurant = require("../models/restaurant");
+const UserPreference = require("../models/UserPreference");
+
+exports.getSuggestedRestaurants = async (req, res) => {
+  try {
+    const preference = await UserPreference.findOne({ user: req.params.userId });
+
+    if (!preference) {
+      const results = await restaurant.find({ isApproved: true }).sort({ rating: -1 }).limit(5);
+      return res.status(200).json({ success: true, data: results });
+    }
+
+    const favoriteCuisines = preference.favoriteCuisines || [];
+
+    const results = await restaurant.aggregate([
+      { $match: { isApproved: true } },
+      {
+        $addFields: {
+          cuisineScore: {
+            $cond: [{ $in: ["$cuisine", favoriteCuisines] }, 2, 0],
+          },
+        },
+      },
+      {
+        $addFields: {
+          recommendationScore: {
+            $add: ["$cuisineScore", "$rating", { $divide: ["$popularity", 10] }],
+          },
+        },
+      },
+      { $sort: { recommendationScore: -1 } },
+      { $limit: 10 },
+    ]);
+
+    res.status(200).json({ success: true, data: results });
+  } catch (error) {
+    res.status(500).json({ success: false, message: error.message });
+  }
+};
+
+exports.searchRestaurants = async (req, res) => {
+  try {
+    const { search, cuisine, rating, maxDeliveryTime, minPrice, maxPrice, isVegetarian, sortBy } = req.query;
+    const filter = { isApproved: true };
+
+    if (search) {
+      filter.$text = { $search: search };
+    }
+
+    if (cuisine) {
+      filter.cuisine = { $regex: cuisine, $options: "i" };
+    }
+
+    if (rating) {
+      filter.rating = { $gte: Number(rating) };
+    }
+
+    if (maxDeliveryTime) {
+      filter.estimatedDeliveryTime = { $lte: Number(maxDeliveryTime) };
+    }
+
+    if (minPrice && maxPrice) {
+      filter.priceRange = { $gte: Number(minPrice), $lte: Number(maxPrice) };
+    }
+
+    if (isVegetarian === "true") {
+      filter.isVegetarian = true;
+    }
+
+    let sort = { createdAt: -1 };
+    if (sortBy === "rating") {
+      sort = { rating: -1 };
+    } else if (sortBy === "popularity") {
+      sort = { popularity: -1 };
+    } else if (sortBy === "deliveryTime") {
+      sort = { estimatedDeliveryTime: 1 };
+    }
+
+    const results = await restaurant.find(filter).sort(sort);
+
+    res.status(200).json({
+      success: true,
+      count: results.length,
+      data: results,
+    });
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      message: error.message,
+    });
+  }
+};
 
 exports.createRestaurant = async (req, res) => {
   try {
@@ -111,6 +202,45 @@ exports.getAllRestaurants = async (req, res) => {
       success: false,
       message: "Error fetching restaurants",
       error: error.message,
+    });
+  }
+};
+
+exports.adminCreateRestaurant = async (req, res) => {
+  try {
+    const createdRestaurant = await restaurant.create({
+      ...req.body,
+      isApproved: true,
+    });
+
+    res.status(201).json({
+      success: true,
+      data: createdRestaurant,
+    });
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      message: error.message,
+    });
+  }
+};
+
+exports.adminUpdateRestaurant = async (req, res) => {
+  try {
+    const updatedRestaurant = await restaurant.findByIdAndUpdate(
+      req.params.restaurantId,
+      req.body,
+      { new: true },
+    );
+
+    res.status(200).json({
+      success: true,
+      data: updatedRestaurant,
+    });
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      message: error.message,
     });
   }
 };
