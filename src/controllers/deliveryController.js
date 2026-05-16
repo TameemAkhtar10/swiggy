@@ -27,13 +27,16 @@ exports.setAvailability = async (req, res) => {
 };
 
 exports.myDeliveries = async (req, res) => {
-    try {
-        const partner = await DeliveryPartner.findOne({ user: req.user._id });
-        const orders = await Order.find({ deliveryPartner: partner._id });
-        res.status(200).json({ success: true, data: orders });
-    } catch (error) {
-        res.status(500).json({ success: false, message: error.message });
+   try {
+    const partner = await DeliveryPartner.findOne({ user: req.user._id });
+    if (!partner) {
+        return res.status(404).json({ success: false, message: "Delivery partner not found" });
     }
+    const orders = await Order.find({ deliveryPartner: partner._id });
+    res.status(200).json({ success: true, data: orders });
+} catch (error) {
+    res.status(500).json({ success: false, message: error.message });
+}
 };
 
 exports.declineOrder = async (req, res) => {

@@ -13,12 +13,8 @@ npm install
 npm run dev
 ```
 
-Create `.env`:
-```
-PORT=3000
-MONGO_URI=mongodb+srv://tamimakhtar1010_db_user:hVwE5bGVegMtmFXj@internship.hajfvol.mongodb.net/Swiggy
-JWT_SECRET=7e33228a027586be313e918238f1285a31febd4d41dc3840a51e12012d414cb6
-```
+
+
 
 ## Test Credentials
 
